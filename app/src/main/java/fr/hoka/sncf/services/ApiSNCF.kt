@@ -18,12 +18,13 @@ class ApiSNCF(
      * Fetch from the SNCF Api the 8 first departures of a Station,
      * and return it to a List of Train.
      * @param codeUIC The Station code.
+     * @param limit Number of results
      * @param cb Callback object
      * @return The 8 first Train.
      */
-    fun fetchDeparturesFromStopArea(codeUIC: Int, cb: Callback) {
+    fun fetchDeparturesFromStopArea(codeUIC: Int, limit: Int = 8, cb: Callback) {
         // Build the uri
-        val uri = "$baseUri/coverage/sncf/stop_areas/stop_area:SNCF:$codeUIC/departures?key=$token"
+        val uri = "$baseUri/coverage/sncf/stop_areas/stop_area:SNCF:$codeUIC/departures?key=$token&count=$limit"
 
         // Build the request
         val request = Request.Builder()
@@ -46,8 +47,8 @@ class ApiSNCF(
             // Parse as JSONArray departures
             val departures: JSONArray = obj.getJSONArray("departures")
 
-            // Iterate through departures (limit to 8)
-            for (i in 0 until 8) {
+            // Iterate through departures
+            for (i in 0 until departures.length()) {
                 // train object
                 val trainObj = departures.getJSONObject(i)
 
