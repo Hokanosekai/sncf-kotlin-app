@@ -1,7 +1,7 @@
 package fr.hoka.sncf.entities
 
 class Train (
-    private val num: Int, // code of the train
+    private val num: String, // code of the train
     private val dest: String, // destination station of the train
     private val prov: String, // source station of the train
     private val h: Int, // hours of departure date time

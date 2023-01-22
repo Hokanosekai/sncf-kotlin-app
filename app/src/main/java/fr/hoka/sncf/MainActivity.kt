@@ -1,10 +1,8 @@
 package fr.hoka.sncf
 
 import android.app.Activity
-import android.content.Context
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
@@ -20,8 +18,9 @@ import java.io.IOException
 class MainActivity : AppCompatActivity() {
     private val api: ApiSNCF = ApiSNCF("https://api.navitia.io/v1", "d20f804d-aa65-4270-94c9-429e2b36fc2b") // Instantiate SNCF API service
     private lateinit var selectedStation: Station // Selected station by the user (default null)
-    private var trains: List<Train> = ArrayList<Train>() // List of all departures Trains from the selected station (default empty)
-    lateinit var trainsViewAdapter: ArrayAdapter<Train> // Trains List View adapter
+    private var trains: List<Train> = arrayListOf<Train>() // List of all departures Trains from the selected station (default empty)
+    private var trainsViewAdapter: ArrayAdapter<Train>? = null // Trains List View adapter
+    private lateinit var trainsListView: ListView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,8 +33,9 @@ class MainActivity : AppCompatActivity() {
         val input = findViewById<AutoCompleteTextView>(R.id.search_input)
 
         // List view
-        val trainsListView = findViewById<ListView>(R.id.trains_list)
+        trainsListView = findViewById(R.id.trains_list)
         trainsViewAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, trains)
+        trainsListView.adapter = trainsViewAdapter
 
         // Our adapter to propose the station by matching her name
         val adapter = ArrayAdapter(this,
@@ -45,6 +45,7 @@ class MainActivity : AppCompatActivity() {
         // On station selected we fetch all trains
         input.setOnItemClickListener {parent, view, position, id ->
             this.selectedStation = parent.getItemAtPosition(position) as Station
+            trainsViewAdapter?.clear()
             api.fetchDeparturesFromStopArea(selectedStation.code_uic, cb = object: Callback{
                 // On failure do nothing (In normal case we will handle the error)
                 override fun onFailure(call: Call, e: IOException) {
@@ -53,19 +54,14 @@ class MainActivity : AppCompatActivity() {
 
                 // On Success parse the response body
                 override fun onResponse(call: Call, response: Response) {
-                    // Hide keyboard
-                    this@MainActivity.currentFocus?.let { hideKeyboard(it) }
-
-                    // Parse response body into Trains entities
-                    trains = api.parseJSON(response.body)
-                    // Update Adapter
-                    trainsViewAdapter.clear()
-                    trainsViewAdapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_list_item_1, trains)
-
-                    // Update the listView
                     this@MainActivity.runOnUiThread {
-                        trainsViewAdapter.notifyDataSetChanged()
+                        // Parse response body into Trains entities
+                        trainsViewAdapter!!.addAll(api.parseJSON(response.body))
+                        // Update the listView
+                        trainsViewAdapter?.notifyDataSetChanged()
                         trainsListView.adapter = trainsViewAdapter
+                        // Hide keyboard
+                        hideKeyboard()
                     }
                 }
             })
@@ -97,11 +93,11 @@ class MainActivity : AppCompatActivity() {
 
     /**
      * Hide keyboard
-     * @param view View to hide keyboard
      */
-    private fun Context.hideKeyboard(view: View) {
-        val inputMethodManager = getSystemService(Activity.INPUT_METHOD_SERVICE) as InputMethodManager
-        inputMethodManager.hideSoftInputFromWindow(view.windowToken, 0)
+    private fun hideKeyboard() {
+        this@MainActivity.currentFocus?.let { view ->
+            val inputMethodManager = getSystemService(Activity.INPUT_METHOD_SERVICE) as InputMethodManager
+            inputMethodManager.hideSoftInputFromWindow(view.windowToken, 0)
+        }
     }
-
 }

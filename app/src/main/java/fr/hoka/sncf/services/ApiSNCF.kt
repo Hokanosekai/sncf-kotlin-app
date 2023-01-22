@@ -57,7 +57,7 @@ class ApiSNCF(
                 val trainStopDateTime = trainObj.getJSONObject("stop_date_time")
 
                 // Train Code, Train Destination, Train Source
-                val num: Int = trainInfo.getInt("headsign")
+                val num: String = trainInfo.getString("trip_short_name")
                 val dest: String = trainInfo.getString("direction")
                 val prov: String = trainInfo.getString("direction")
 
