@@ -1,7 +1,11 @@
 package fr.hoka.sncf
 
+import android.app.Activity
+import android.content.Context
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.view.View
+import android.view.inputmethod.InputMethodManager
 import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
 import android.widget.ListView
@@ -15,7 +19,7 @@ import java.io.IOException
 
 class MainActivity : AppCompatActivity() {
     private val api: ApiSNCF = ApiSNCF("https://api.navitia.io/v1", "d20f804d-aa65-4270-94c9-429e2b36fc2b") // Instantiate SNCF API service
-    lateinit var selectedStation: Station // Selected station by the user (default null)
+    private lateinit var selectedStation: Station // Selected station by the user (default null)
     private var trains: List<Train> = ArrayList<Train>() // List of all departures Trains from the selected station (default empty)
     lateinit var trainsViewAdapter: ArrayAdapter<Train> // Trains List View adapter
 
@@ -49,16 +53,20 @@ class MainActivity : AppCompatActivity() {
 
                 // On Success parse the response body
                 override fun onResponse(call: Call, response: Response) {
+                    // Hide keyboard
+                    this@MainActivity.currentFocus?.let { hideKeyboard(it) }
+
                     // Parse response body into Trains entities
                     trains = api.parseJSON(response.body)
                     // Update Adapter
+                    trainsViewAdapter.clear()
                     trainsViewAdapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_list_item_1, trains)
 
                     // Update the listView
-                    this@MainActivity.runOnUiThread(java.lang.Runnable {
+                    this@MainActivity.runOnUiThread {
                         trainsViewAdapter.notifyDataSetChanged()
                         trainsListView.adapter = trainsViewAdapter
-                    })
+                    }
                 }
             })
         }
@@ -86,4 +94,14 @@ class MainActivity : AppCompatActivity() {
                 Station(code.toInt(), lib, lg.toDouble(), lat.toDouble())
             }.toList()
     }
+
+    /**
+     * Hide keyboard
+     * @param view View to hide keyboard
+     */
+    private fun Context.hideKeyboard(view: View) {
+        val inputMethodManager = getSystemService(Activity.INPUT_METHOD_SERVICE) as InputMethodManager
+        inputMethodManager.hideSoftInputFromWindow(view.windowToken, 0)
+    }
+
 }
