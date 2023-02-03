@@ -1,6 +1,7 @@
 package fr.hoka.sncf
 
 import android.app.Activity
+import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.inputmethod.InputMethodManager
@@ -13,12 +14,18 @@ import fr.hoka.sncf.services.ApiSNCF
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.Response
+import okhttp3.ResponseBody
 import java.io.IOException
+import java.sql.DriverManager.println
 
 class MainActivity : AppCompatActivity() {
-    private val api: ApiSNCF = ApiSNCF("https://api.navitia.io/v1", "d20f804d-aa65-4270-94c9-429e2b36fc2b") // Instantiate SNCF API service
+    private val api: ApiSNCF = ApiSNCF(
+        "https://api.navitia.io/v1",
+        "d20f804d-aa65-4270-94c9-429e2b36fc2b"
+    ) // Instantiate SNCF API service
     private lateinit var selectedStation: Station // Selected station by the user (default null)
-    private var trains: List<Train> = arrayListOf<Train>() // List of all departures Trains from the selected station (default empty)
+    private var trains: List<Train> =
+        arrayListOf() // List of all departures Trains from the selected station (default empty)
     private var trainsViewAdapter: ArrayAdapter<Train>? = null // Trains List View adapter
     private lateinit var trainsListView: ListView
 
@@ -38,15 +45,17 @@ class MainActivity : AppCompatActivity() {
         trainsListView.adapter = trainsViewAdapter
 
         // Our adapter to propose the station by matching her name
-        val adapter = ArrayAdapter(this,
-            android.R.layout.simple_list_item_1, stations)
+        val adapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_list_item_1, stations
+        )
         input.setAdapter(adapter)
 
         // On station selected we fetch all trains
-        input.setOnItemClickListener {parent, view, position, id ->
+        input.setOnItemClickListener { parent, _, position, _ ->
             this.selectedStation = parent.getItemAtPosition(position) as Station
             trainsViewAdapter?.clear()
-            api.fetchDeparturesFromStopArea(selectedStation.code_uic, cb = object: Callback{
+            api.fetchDeparturesFromStopArea(selectedStation.code_uic, cb = object : Callback {
                 // On failure do nothing (In normal case we will handle the error)
                 override fun onFailure(call: Call, e: IOException) {
                     e.printStackTrace()
@@ -55,8 +64,24 @@ class MainActivity : AppCompatActivity() {
                 // On Success parse the response body
                 override fun onResponse(call: Call, response: Response) {
                     this@MainActivity.runOnUiThread {
+                        val trains = api.parseJSONDepartures(response.body as ResponseBody, selectedStation)
                         // Parse response body into Trains entities
-                        trainsViewAdapter!!.addAll(api.parseJSON(response.body))
+                        trainsViewAdapter!!.addAll(trains)
+
+                        // Fetch all stops for each train
+                        for (train in trains) {
+                            api.fetchVehicleJourney(train.vehicle_journey_id, cb = object : Callback {
+                                override fun onFailure(call: Call, e: IOException) {
+                                    e.printStackTrace()
+                                }
+
+                                override fun onResponse(call: Call, response: Response) {
+                                    // Parse response body into Stops entities
+                                    api.parseJSONVehicleJourneys(train, response.body!!)
+                                }
+                            })
+                        }
+
                         // Update the listView
                         trainsViewAdapter?.notifyDataSetChanged()
                         trainsListView.adapter = trainsViewAdapter
@@ -65,6 +90,18 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             })
+        }
+
+        // On train selected we open the map activity
+        trainsListView.setOnItemClickListener { parent, _, position, _ ->
+            // Get the selected train
+            val el = parent.getItemAtPosition(position) as Train
+            // Create intent to open the map activity
+            val intent = Intent(this, MapsActivity::class.java)
+            // Pass the train to the map activity
+            intent.putExtra("train", el)
+            // Start the map activity
+            startActivity(intent)
         }
     }
 
@@ -96,7 +133,8 @@ class MainActivity : AppCompatActivity() {
      */
     private fun hideKeyboard() {
         this@MainActivity.currentFocus?.let { view ->
-            val inputMethodManager = getSystemService(Activity.INPUT_METHOD_SERVICE) as InputMethodManager
+            val inputMethodManager =
+                getSystemService(Activity.INPUT_METHOD_SERVICE) as InputMethodManager
             inputMethodManager.hideSoftInputFromWindow(view.windowToken, 0)
         }
     }

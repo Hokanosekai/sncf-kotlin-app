@@ -2,4 +2,6 @@
     <string name="app_name">sncf</string>
     <string name="search_hint">Ville</string>
     <string name="text">Prochains Départs</string>
+    <string name="title_activity_maps">MapsActivity</string>
+    <string name="title_activity_maps2">MapsActivity2</string>
 </resources>

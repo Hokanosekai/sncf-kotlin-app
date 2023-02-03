@@ -8,6 +8,12 @@ This app had for objective to learn Android and Kotlin by using the [SNCF Api](h
 
 ![screen](./images/1.jpg)
 
+### V2
+
+![screen](./images/v2_1.jpg)
+
+![screen](./images/v2_2.jpg)
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) fil for details.
