@@ -64,29 +64,38 @@ class MainActivity : AppCompatActivity() {
                 // On Success parse the response body
                 override fun onResponse(call: Call, response: Response) {
                     this@MainActivity.runOnUiThread {
-                        val trains = api.parseJSONDepartures(response.body as ResponseBody, selectedStation)
-                        // Parse response body into Trains entities
-                        trainsViewAdapter!!.addAll(trains)
+                        val trains =
+                            api.parseJSONDepartures(response.body as ResponseBody, selectedStation)
 
                         // Fetch all stops for each train
-                        for (train in trains) {
-                            api.fetchVehicleJourney(train.vehicle_journey_id, cb = object : Callback {
-                                override fun onFailure(call: Call, e: IOException) {
-                                    e.printStackTrace()
-                                }
+                        try {
+                            for (train in trains) {
+                                api.fetchVehicleJourney(
+                                    train.vehicle_journey_id,
+                                    cb = object : Callback {
+                                        override fun onFailure(call: Call, e: IOException) {
+                                            e.printStackTrace()
+                                        }
 
-                                override fun onResponse(call: Call, response: Response) {
-                                    // Parse response body into Stops entities
-                                    api.parseJSONVehicleJourneys(train, response.body!!)
-                                }
-                            })
+                                        override fun onResponse(call: Call, response: Response) {
+                                            // Parse response body into Stops entities
+                                            api.parseJSONVehicleJourneys(train, response.body!!)
+                                        }
+                                    })
+                            }
+                        } catch (e: Exception) {
+                            println(e)
+                        } finally {
+                            println("Finally")
+
+                            // Parse response body into Trains entities
+                            trainsViewAdapter!!.addAll(trains)
+                            // Update the listView
+                            trainsViewAdapter?.notifyDataSetChanged()
+                            trainsListView.adapter = trainsViewAdapter
+                            // Hide keyboard
+                            hideKeyboard()
                         }
-
-                        // Update the listView
-                        trainsViewAdapter?.notifyDataSetChanged()
-                        trainsListView.adapter = trainsViewAdapter
-                        // Hide keyboard
-                        hideKeyboard()
                     }
                 }
             })

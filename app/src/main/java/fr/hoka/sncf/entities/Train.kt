@@ -13,6 +13,7 @@ data class Train(
     val vehicle_journey_id: String // Vehicle Journeys of the train
 ) : Parcelable {
 
+    var direction: String? = null // direction of the train
     var from: Stops? = null // source station of the train
     var to: Stops? = null // destination station of the train
     var stops: ArrayList<Stops> = arrayListOf() // list of stops of the train
@@ -44,7 +45,7 @@ data class Train(
      * @return A stringifies view of Train entity
      */
     override fun toString(): String {
-        return "${from!!.getDeparture()} - ${from!!.getStation()} \n${type.name} - $num"
+        return "${from!!.getDeparture()} - $direction \n${type.name} - $num"
     }
 
     override fun writeToParcel(parcel: Parcel, flags: Int) {

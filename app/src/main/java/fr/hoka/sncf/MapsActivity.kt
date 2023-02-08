@@ -1,6 +1,8 @@
 package fr.hoka.sncf
 
+import android.graphics.Color
 import android.os.Bundle
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -52,6 +54,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolygo
         // Calculate the average of the stops
         val latAverage = train.stops.map { it.getStation().lat }.average()
         val longAverage = train.stops.map { it.getStation().long }.average()
+
+        val pane = findViewById<TextView>(R.id.pane)
+        pane.text = "${train.type} n°${train.num} \n${train.from!!.getStation()} -> ${train.to!!.getStation()}"
 
         // Add a polyline to the map
         googleMap.addPolyline(PolylineOptions()

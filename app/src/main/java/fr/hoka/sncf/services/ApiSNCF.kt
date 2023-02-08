@@ -8,8 +8,6 @@ import okhttp3.*
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
-import java.io.IOException
-import java.sql.DriverManager.println
 import java.util.*
 
 class ApiSNCF(
@@ -85,6 +83,7 @@ class ApiSNCF(
                 val links = trainObj.getJSONArray("links")
 
                 // Train Code, Train Destination, Train Source
+                val direction: String = trainInfo.getString("direction")
                 val num: String = trainInfo.getString("trip_short_name")
                 val type: String = trainInfo.getString("commercial_mode").toString().split(" ")[0]
 
@@ -114,6 +113,7 @@ class ApiSNCF(
                     num,
                     t, h, m, vehicleJourneyId)
                 train.from = stopFrom
+                train.direction = direction
 
                 // Add the new train to the tmp list
                 tmpTrains.add(train)
@@ -159,7 +159,7 @@ class ApiSNCF(
             val stop = Stops(hArrival, mArrival, hDeparture, mDeparture)
             stop.setStation(station)
 
-            train.addStops(stop, !stopObj.getBoolean("drop_off_allowed"), !stopObj.getBoolean("pickup_allowed"))
+            train.addStops(stop, !stopObj.getBoolean("drop_off_allowed"), !stopObj.getBoolean("pickup_allowed") || i == stops.length() - 1)
         }
 
         return train
